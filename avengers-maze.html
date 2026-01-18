@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avengers Maze - Marvel Heroes</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --hulk: #4CAF50;
+            --falcon: #E53935;
+            --hawkeye: #9C27B0;
+            --stretch: #2196F3;
+            --bg-dark: #0a0a1a;
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --text: #ffffff;
+            --text-dim: #888;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Cosmic Background */
+        .cosmic-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(76, 175, 80, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(156, 39, 176, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(33, 150, 243, 0.05) 0%, transparent 70%),
+                linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 100%);
+            z-index: -1;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                radial-gradient(2px 2px at 160px 120px, rgba(255, 255, 255, 0.9), transparent),
+                radial-gradient(1px 1px at 230px 80px, #fff, transparent),
+                radial-gradient(2px 2px at 300px 150px, rgba(255, 255, 255, 0.7), transparent);
+            background-size: 350px 200px;
+            animation: twinkle 5s ease-in-out infinite alternate;
+            z-index: -1;
+        }
+
+        @keyframes twinkle {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Title Screen */
+        #title-screen {
+            justify-content: center;
+            text-align: center;
+        }
+
+        .game-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, #E53935, #9C27B0, #2196F3, #4CAF50);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+            text-shadow: 0 0 60px rgba(255, 255, 255, 0.2);
+            margin-bottom: 10px;
+        }
+
+        @keyframes gradientShift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            margin-bottom: 50px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .btn {
+            font-family: 'Orbitron', sans-serif;
+            padding: 18px 50px;
+            font-size: 1.1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: var(--bg-card);
+            color: var(--text);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hero Selection */
+        #hero-select {
+            padding-top: 40px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        .hero-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--hero-color);
+            opacity: 0.8;
+        }
+
+        .hero-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--hero-color);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 30px var(--hero-color-glow);
+        }
+
+        .hero-card[data-hero="hulk"] {
+            --hero-color: var(--hulk);
+            --hero-color-glow: rgba(76, 175, 80, 0.3);
+        }
+
+        .hero-card[data-hero="falcon"] {
+            --hero-color: var(--falcon);
+            --hero-color-glow: rgba(229, 57, 53, 0.3);
+        }
+
+        .hero-card[data-hero="hawkeye"] {
+            --hero-color: var(--hawkeye);
+            --hero-color-glow: rgba(156, 39, 176, 0.3);
+        }
+
+        .hero-card[data-hero="stretch"] {
+            --hero-color: var(--stretch);
+            --hero-color-glow: rgba(33, 150, 243, 0.3);
+        }
+
+        .hero-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            box-shadow: 0 0 30px var(--hero-color-glow);
+            overflow: hidden;
+            border: 2px solid var(--hero-color);
+        }
+
+        .hero-sprite-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .hero-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--hero-color);
+        }
+
+        .hero-subtitle {
+            color: var(--text-dim);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--hero-color);
+        }
+
+        .hero-abilities {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+
+        .ability {
+            font-size: 0.85rem;
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ability-icon {
+            font-size: 1rem;
+        }
+
+        /* Game Screen */
+        #game-screen {
+            padding: 20px;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 20px;
+            padding: 15px 25px;
+            background: var(--bg-card);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .player-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .header-sprite-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .health-bar-container {
+            width: 200px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .health-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .ability-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .ability-btn {
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .ability-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--hulk);
+        }
+
+        .ability-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .ability-btn .cooldown {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        /* Maze Container */
+        .maze-container {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .maze {
+            display: grid;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .tile {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        /* HIGH CONTRAST WALLS - Dark brick pattern */
+        .tile.wall {
+            background:
+                linear-gradient(90deg, rgba(0, 0, 0, 0.3) 1px, transparent 1px),
+                linear-gradient(rgba(0, 0, 0, 0.3) 1px, transparent 1px),
+                linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            background-size: 12px 8px, 12px 8px, 100% 100%;
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.8),
+                inset 0 -1px 2px rgba(255, 255, 255, 0.05);
+            border: 1px solid #0a0a15;
+        }
+
+        /* BRIGHT FLOOR - Clear contrast */
+        .tile.floor {
+            background: linear-gradient(135deg, #4a4a6a 0%, #3a3a5a 100%);
+            border: 1px solid #5a5a7a;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1);
+        }
+
+        .tile.exit {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            animation: pulse 2s ease-in-out infinite;
+            border: 2px solid #8BC34A;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(76, 175, 80, 0.8);
+            }
+        }
+
+        .tile.hidden {
+            background: #050510 !important;
+            border: 1px solid #0a0a15 !important;
+            box-shadow: none;
+        }
+
+        .tile.hidden * {
+            display: none;
+        }
+
+        /* CHARACTER SPRITE CONTAINER */
+        .character-sprite {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* PLAYER SPRITE */
+        .player-sprite {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: playerBounce 1s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Sprite image styling */
+        .sprite-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .sprite-fallback {
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Hero-specific glow effects */
+        .player-sprite.hulk {
+            filter: drop-shadow(0 0 4px rgba(76, 175, 80, 0.6));
+        }
+
+        .player-sprite.falcon {
+            filter: drop-shadow(0 0 4px rgba(229, 57, 53, 0.6));
+        }
+
+        .player-sprite.hawkeye {
+            filter: drop-shadow(0 0 4px rgba(156, 39, 176, 0.6));
+        }
+
+        .player-sprite.stretch {
+            filter: drop-shadow(0 0 4px rgba(33, 150, 243, 0.6));
+        }
+
+        @keyframes playerBounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-2px);
+            }
+        }
+
+        /* ENEMY SPRITES */
+        .enemy-sprite {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Enemy-specific glow effects */
+        .enemy-sprite.chitauri {
+            filter: drop-shadow(0 0 3px rgba(120, 144, 156, 0.6));
+        }
+
+        .enemy-sprite.hydra {
+            filter: drop-shadow(0 0 3px rgba(67, 160, 71, 0.6));
+        }
+
+        .enemy-sprite.ultron {
+            filter: drop-shadow(0 0 3px rgba(239, 83, 80, 0.6));
+        }
+
+        .enemy-sprite .sprite-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .enemy-sprite .sprite-fallback {
+            font-size: 18px;
+        }
+
+        /* MINI HEALTH BARS (in maze) */
+        .mini-health-bar {
+            width: 30px;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 2px;
+            margin-top: 2px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .mini-health-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .mini-health-fill.player {
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+        }
+
+        .mini-health-fill.enemy {
+            background: linear-gradient(90deg, #E53935, #FF5722);
+        }
+
+        /* Legacy markers for fallback */
+        .player-marker {
+            font-size: 1.5rem;
+            animation: playerBounce 1s ease-in-out infinite;
+        }
+
+        .enemy-marker {
+            font-size: 1.3rem;
+        }
+
+        /* Combat Overlay */
+        .combat-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .combat-overlay.active {
+            display: flex;
+        }
+
+        .combat-box {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .combat-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            color: var(--falcon);
+            margin-bottom: 30px;
+        }
+
+        .combatants {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .combatant {
+            text-align: center;
+        }
+
+        .combatant-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 15px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .combat-sprite-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .combatant-name {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .combat-health-bar {
+            width: 150px;
+            height: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .combat-health {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.3s;
+        }
+
+        .enemy-health {
+            background: linear-gradient(90deg, #E53935, #FF5722);
+        }
+
+        .vs-icon {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: var(--text-dim);
+        }
+
+        .combat-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .combat-btn {
+            padding: 15px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            border: 2px solid;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: transparent;
+            color: var(--text);
+        }
+
+        .combat-btn.attack {
+            border-color: var(--falcon);
+        }
+
+        .combat-btn.special {
+            border-color: var(--hawkeye);
+        }
+
+        .combat-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .combat-btn.attack:hover {
+            background: var(--falcon);
+        }
+
+        .combat-btn.special:hover {
+            background: var(--hawkeye);
+        }
+
+        .combat-log {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            max-height: 100px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        /* Victory/Defeat Screens */
+        .result-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .result-overlay.active {
+            display: flex;
+        }
+
+        .result-box {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .result-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .result-title.victory {
+            background: linear-gradient(135deg, #4CAF50, #8BC34A);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .result-title.defeat {
+            background: linear-gradient(135deg, #E53935, #FF5722);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .result-stats {
+            margin: 30px 0;
+            color: var(--text-dim);
+        }
+
+        /* Instructions */
+        .instructions {
+            margin-top: 20px;
+            padding: 15px 25px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3px 10px;
+            border-radius: 5px;
+            margin: 0 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="cosmic-bg"></div>
+    <div class="stars"></div>
+
+    <!-- Title Screen -->
+    <div id="title-screen" class="screen active">
+        <h1 class="game-title">AVENGERS MAZE</h1>
+        <p class="subtitle">Choose Your Hero • Defeat the Villains</p>
+        <button class="btn" onclick="showScreen('hero-select')">START GAME</button>
+    </div>
+
+    <!-- Hero Selection -->
+    <div id="hero-select" class="screen">
+        <h2 class="section-title">Choose Your Hero</h2>
+        <div class="hero-grid">
+            <div class="hero-card" data-hero="hulk" onclick="selectHero('hulk')">
+                <div class="hero-icon"><img src="sprites/hulk.png" alt="Hulk" class="hero-sprite-img"></div>
+                <div class="hero-name">HULK</div>
+                <div class="hero-subtitle">The Powerhouse</div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-label">Health</div>
+                        <div class="stat-value">150</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Attack</div>
+                        <div class="stat-value">25</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Speed</div>
+                        <div class="stat-value">Slow</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Vision</div>
+                        <div class="stat-value">2</div>
+                    </div>
+                </div>
+                <div class="hero-abilities">
+                    <div class="ability"><span class="ability-icon">💥</span> Wall Smash - Destroy walls</div>
+                    <div class="ability"><span class="ability-icon">🌍</span> Ground Pound - Stun enemies</div>
+                </div>
+            </div>
+
+            <div class="hero-card" data-hero="falcon" onclick="selectHero('falcon')">
+                <div class="hero-icon"><img src="sprites/falcon.png" alt="Falcon" class="hero-sprite-img"></div>
+                <div class="hero-name">FALCON</div>
+                <div class="hero-subtitle">The Scout</div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-label">Health</div>
+                        <div class="stat-value">100</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Attack</div>
+                        <div class="stat-value">18</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Speed</div>
+                        <div class="stat-value">Fast</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Vision</div>
+                        <div class="stat-value">4</div>
+                    </div>
+                </div>
+                <div class="hero-abilities">
+                    <div class="ability"><span class="ability-icon">🔭</span> Aerial Recon - Reveal area</div>
+                    <div class="ability"><span class="ability-icon">🕊️</span> Glide - Fly over wall</div>
+                </div>
+            </div>
+
+            <div class="hero-card" data-hero="hawkeye" onclick="selectHero('hawkeye')">
+                <div class="hero-icon"><img src="sprites/hawkeye.png" alt="Hawkeye" class="hero-sprite-img"></div>
+                <div class="hero-name">HAWKEYE</div>
+                <div class="hero-subtitle">The Marksman</div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-label">Health</div>
+                        <div class="stat-value">90</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Attack</div>
+                        <div class="stat-value">22</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Speed</div>
+                        <div class="stat-value">Normal</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Vision</div>
+                        <div class="stat-value">3</div>
+                    </div>
+                </div>
+                <div class="hero-abilities">
+                    <div class="ability"><span class="ability-icon">🎯</span> Trick Arrow - Ranged attack</div>
+                    <div class="ability"><span class="ability-icon">👁️</span> Eagle Eye - See through walls</div>
+                </div>
+            </div>
+
+            <div class="hero-card" data-hero="stretch" onclick="selectHero('stretch')">
+                <div class="hero-icon"><img src="sprites/stretch.png" alt="Stretch" class="hero-sprite-img"></div>
+                <div class="hero-name">STRETCH</div>
+                <div class="hero-subtitle">The Infiltrator</div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-label">Health</div>
+                        <div class="stat-value">85</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Attack</div>
+                        <div class="stat-value">15</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Speed</div>
+                        <div class="stat-value">Normal</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Vision</div>
+                        <div class="stat-value">3</div>
+                    </div>
+                </div>
+                <div class="hero-abilities">
+                    <div class="ability"><span class="ability-icon">🌀</span> Squeeze - Pass through gaps</div>
+                    <div class="ability"><span class="ability-icon">🤚</span> Long Reach - Grab distant items</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="game-header">
+            <div class="player-info">
+                <div class="player-icon" id="player-icon"><img id="player-icon-img" src="" alt=""
+                        class="header-sprite-img"></div>
+                <div>
+                    <div id="player-name">HULK</div>
+                    <div class="health-bar-container">
+                        <div class="health-bar" id="health-bar"></div>
+                    </div>
+                    <div id="health-text" style="font-size: 0.8rem; color: var(--text-dim);">150/150</div>
+                </div>
+            </div>
+            <div class="ability-buttons">
+                <button class="ability-btn" id="ability1-btn" onclick="useAbility(1)">
+                    <span id="ability1-name">💥 Wall Smash</span>
+                    <div class="cooldown" id="ability1-cd"></div>
+                </button>
+                <button class="ability-btn" id="ability2-btn" onclick="useAbility(2)">
+                    <span id="ability2-name">🌍 Ground Pound</span>
+                    <div class="cooldown" id="ability2-cd"></div>
+                </button>
+            </div>
+        </div>
+
+        <div class="maze-container">
+            <div class="maze" id="maze"></div>
+        </div>
+
+        <div class="instructions">
+            Use <span class="key">↑</span><span class="key">↓</span><span class="key">←</span><span class="key">→</span>
+            or <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
+            to move • <span class="key">1</span><span class="key">2</span> for abilities • Find the exit!
+        </div>
+    </div>
+
+    <!-- Combat Overlay -->
+    <div class="combat-overlay" id="combat-overlay">
+        <div class="combat-box">
+            <h3 class="combat-title">⚔️ ENEMY ENCOUNTER!</h3>
+            <div class="combatants">
+                <div class="combatant">
+                    <div class="combatant-icon" id="combat-player-icon"><img id="combat-player-icon-img" src="" alt=""
+                            class="combat-sprite-img"></div>
+                    <div class="combatant-name" id="combat-player-name">Hulk</div>
+                    <div class="combat-health-bar">
+                        <div class="combat-health" id="combat-player-health"></div>
+                    </div>
+                </div>
+                <div class="vs-icon">VS</div>
+                <div class="combatant">
+                    <div class="combatant-icon" id="combat-enemy-icon"><img id="combat-enemy-icon-img" src="" alt=""
+                            class="combat-sprite-img"></div>
+                    <div class="combatant-name" id="combat-enemy-name">Chitauri</div>
+                    <div class="combat-health-bar">
+                        <div class="combat-health enemy-health" id="combat-enemy-health"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="combat-actions">
+                <button class="combat-btn attack" onclick="combatAttack()">⚔️ ATTACK</button>
+                <button class="combat-btn special" id="combat-special-btn" onclick="combatSpecial()">✨ SPECIAL</button>
+            </div>
+            <div class="combat-log" id="combat-log"></div>
+        </div>
+    </div>
+
+    <!-- Result Overlay -->
+    <div class="result-overlay" id="result-overlay">
+        <div class="result-box">
+            <h2 class="result-title" id="result-title">VICTORY!</h2>
+            <div class="result-stats" id="result-stats"></div>
+            <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- Game Engine -->
+    <script src="avengers-maze.js"></script>
+</body>
+
+</html>
