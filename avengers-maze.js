@@ -80,26 +80,100 @@ const enemyTypes = {
 // MAZE LAYOUT
 // 0=wall, 1=floor, 2=start, 3=exit, 4=enemy spawn
 // ============================================
-const mazeLayout = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 2, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
-    [0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0],
-    [0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 4, 0, 1, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0],
-    [0, 1, 1, 4, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0],
-    [0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0],
-    [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-    [0, 1, 0, 4, 0, 1, 1, 1, 1, 4, 1, 1, 0, 1, 0],
-    [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
-    [0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0],
-    [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-];
+const MAZE_HEIGHT = 15;
+const MAZE_WIDTH = 15;
+let mazeLayout = [];
 
-const MAZE_HEIGHT = mazeLayout.length;
-const MAZE_WIDTH = mazeLayout[0].length;
+// ============================================
+// MAZE GENERATION (Recursive Backtracking)
+// ============================================
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function generateMaze() {
+    // Initialize maze with all walls
+    mazeLayout = [];
+    for (let y = 0; y < MAZE_HEIGHT; y++) {
+        mazeLayout.push(new Array(MAZE_WIDTH).fill(0));
+    }
+
+    // Directions: [dx, dy]
+    const directions = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+
+    // Carve maze using recursive backtracking
+    function carve(x, y) {
+        mazeLayout[y][x] = 1;
+
+        const shuffledDirs = shuffleArray([...directions]);
+
+        for (const [dx, dy] of shuffledDirs) {
+            const nx = x + dx;
+            const ny = y + dy;
+
+            if (nx > 0 && nx < MAZE_WIDTH - 1 && ny > 0 && ny < MAZE_HEIGHT - 1 && mazeLayout[ny][nx] === 0) {
+                // Carve through the wall between current and next cell
+                mazeLayout[y + dy / 2][x + dx / 2] = 1;
+                carve(nx, ny);
+            }
+        }
+    }
+
+    // Start carving from (1, 1)
+    carve(1, 1);
+
+    // Set start position
+    mazeLayout[1][1] = 2;
+
+    // Find a suitable exit position (far from start)
+    let exitX = MAZE_WIDTH - 2;
+    let exitY = MAZE_HEIGHT - 2;
+
+    // Make sure exit is on a floor tile, search nearby if needed
+    while (mazeLayout[exitY][exitX] === 0 && exitY > 1) {
+        exitY--;
+    }
+    while (mazeLayout[exitY][exitX] === 0 && exitX > 1) {
+        exitX--;
+    }
+    mazeLayout[exitY][exitX] = 3;
+
+    // Place enemy spawn points distributed throughout the maze
+    placeEnemySpawns();
+}
+
+function placeEnemySpawns() {
+    // Collect all floor tiles
+    const floorTiles = [];
+    for (let y = 2; y < MAZE_HEIGHT - 2; y++) {
+        for (let x = 2; x < MAZE_WIDTH - 2; x++) {
+            if (mazeLayout[y][x] === 1) {
+                // Calculate distance from start
+                const distFromStart = Math.abs(x - 1) + Math.abs(y - 1);
+                if (distFromStart >= 4) {
+                    floorTiles.push({ x, y, dist: distFromStart });
+                }
+            }
+        }
+    }
+
+    // Sort by distance from start (further is better)
+    floorTiles.sort((a, b) => b.dist - a.dist);
+
+    // Place at least as many spawns as enemy types (3), up to 5
+    const numSpawns = Math.min(Math.max(Object.keys(enemyTypes).length, 4), Math.min(5, floorTiles.length));
+
+    // Select spawn points spread throughout the maze
+    const step = Math.floor(floorTiles.length / numSpawns);
+    for (let i = 0; i < numSpawns && i * step < floorTiles.length; i++) {
+        const tile = floorTiles[i * step];
+        mazeLayout[tile.y][tile.x] = 4;
+    }
+}
 
 // ============================================
 // SCREEN MANAGEMENT
@@ -139,25 +213,44 @@ function initGame() {
     document.getElementById('ability1-name').textContent = game.hero.ability1.name;
     document.getElementById('ability2-name').textContent = game.hero.ability2.name;
 
-    // Spawn enemies at marked positions
-    const enemyTypeList = ['chitauri', 'hydra', 'ultron', 'chitauri'];
-    let enemyIndex = 0;
+    // Generate a new random maze
+    generateMaze();
+
+    // Spawn enemies at marked positions - ensure all enemy types appear
+    const allEnemyTypes = Object.keys(enemyTypes);
+    const spawnPoints = [];
+
+    // Collect all spawn points
     for (let y = 0; y < MAZE_HEIGHT; y++) {
         for (let x = 0; x < MAZE_WIDTH; x++) {
             if (mazeLayout[y][x] === 4) {
-                const type = enemyTypeList[enemyIndex % enemyTypeList.length];
-                game.enemies.push({
-                    ...enemyTypes[type],
-                    type: type,
-                    x: x,
-                    y: y,
-                    currentHealth: enemyTypes[type].health,
-                    stunned: false
-                });
-                enemyIndex++;
+                spawnPoints.push({ x, y });
             }
         }
     }
+
+    // Shuffle spawn points
+    shuffleArray(spawnPoints);
+
+    // Create enemy list: all types first, then random for remaining
+    let enemyAssignments = [...allEnemyTypes];
+    while (enemyAssignments.length < spawnPoints.length) {
+        enemyAssignments.push(allEnemyTypes[Math.floor(Math.random() * allEnemyTypes.length)]);
+    }
+    shuffleArray(enemyAssignments);
+
+    // Spawn enemies
+    spawnPoints.forEach((pos, i) => {
+        const type = enemyAssignments[i];
+        game.enemies.push({
+            ...enemyTypes[type],
+            type: type,
+            x: pos.x,
+            y: pos.y,
+            currentHealth: enemyTypes[type].health,
+            stunned: false
+        });
+    });
 
     updateHealthBar();
     updateAbilityButtons();
@@ -237,8 +330,13 @@ function renderMaze() {
                 if (cellType === 0) {
                     tile.classList.add('wall');
                 } else if (cellType === 3) {
-                    tile.classList.add('exit');
-                    tile.innerHTML = '🚪';
+                    // Only show exit when all enemies are defeated
+                    if (game.enemies.length === 0) {
+                        tile.classList.add('exit');
+                        tile.innerHTML = '🚪';
+                    } else {
+                        tile.classList.add('floor');
+                    }
                 } else {
                     tile.classList.add('floor');
                 }
@@ -335,8 +433,8 @@ function movePlayer(dx, dy) {
         return;
     }
 
-    // Check for exit
-    if (mazeLayout[newY][newX] === 3) {
+    // Check for exit - only works when all enemies defeated
+    if (mazeLayout[newY][newX] === 3 && game.enemies.length === 0) {
         victory();
     }
 }
@@ -544,32 +642,34 @@ function combatAttack() {
     enemy.currentHealth -= damage;
     addCombatLog(`💥 You deal ${damage} damage!`);
 
-    if (enemy.currentHealth <= 0) {
-        addCombatLog(`✅ ${enemy.name} defeated!`);
-        setTimeout(() => endCombat(true), 800);
-        updateCombatHealth();
-        return;
-    }
-
-    // Enemy attacks back (unless stunned)
+    // Enemy attacks back simultaneously (unless stunned)
+    let enemyDamage = 0;
     if (!enemy.stunned) {
-        const enemyDamage = enemy.attack + Math.floor(Math.random() * 5);
+        enemyDamage = enemy.attack + Math.floor(Math.random() * 5);
         game.health -= enemyDamage;
         addCombatLog(`🔥 ${enemy.name} deals ${enemyDamage} damage!`);
         updateHealthBar();
-
-        if (game.health <= 0) {
-            addCombatLog(`💀 You have been defeated!`);
-            setTimeout(() => endCombat(false), 800);
-            updateCombatHealth();
-            return;
-        }
     } else {
         addCombatLog(`😵 ${enemy.name} is stunned and can't attack!`);
         enemy.stunned = false;
     }
 
     updateCombatHealth();
+
+    // Check for deaths after both attacks
+    const enemyDead = enemy.currentHealth <= 0;
+    const playerDead = game.health <= 0;
+
+    if (enemyDead && playerDead) {
+        addCombatLog(`💀 Both combatants have fallen!`);
+        setTimeout(() => endCombat(false), 800);
+    } else if (enemyDead) {
+        addCombatLog(`✅ ${enemy.name} defeated!`);
+        setTimeout(() => endCombat(true), 800);
+    } else if (playerDead) {
+        addCombatLog(`💀 You have been defeated!`);
+        setTimeout(() => endCombat(false), 800);
+    }
 }
 
 function combatSpecial() {
@@ -579,31 +679,34 @@ function combatSpecial() {
     enemy.currentHealth -= damage;
     addCombatLog(`⚡ SPECIAL ATTACK! ${damage} damage!`);
 
-    if (enemy.currentHealth <= 0) {
-        addCombatLog(`✅ ${enemy.name} defeated!`);
-        setTimeout(() => endCombat(true), 800);
-        updateCombatHealth();
-        return;
-    }
-
-    // Enemy attacks back
+    // Enemy attacks back simultaneously (unless stunned)
+    let enemyDamage = 0;
     if (!enemy.stunned) {
-        const enemyDamage = enemy.attack + Math.floor(Math.random() * 5);
+        enemyDamage = enemy.attack + Math.floor(Math.random() * 5);
         game.health -= enemyDamage;
         addCombatLog(`🔥 ${enemy.name} deals ${enemyDamage} damage!`);
         updateHealthBar();
-
-        if (game.health <= 0) {
-            setTimeout(() => endCombat(false), 800);
-            updateCombatHealth();
-            return;
-        }
     } else {
         addCombatLog(`😵 ${enemy.name} is stunned!`);
         enemy.stunned = false;
     }
 
     updateCombatHealth();
+
+    // Check for deaths after both attacks
+    const enemyDead = enemy.currentHealth <= 0;
+    const playerDead = game.health <= 0;
+
+    if (enemyDead && playerDead) {
+        addCombatLog(`💀 Both combatants have fallen!`);
+        setTimeout(() => endCombat(false), 800);
+    } else if (enemyDead) {
+        addCombatLog(`✅ ${enemy.name} defeated!`);
+        setTimeout(() => endCombat(true), 800);
+    } else if (playerDead) {
+        addCombatLog(`💀 You have been defeated!`);
+        setTimeout(() => endCombat(false), 800);
+    }
 }
 
 function endCombat(won) {
@@ -614,7 +717,13 @@ function endCombat(won) {
         game.enemies = game.enemies.filter(e => e !== game.currentEnemy);
         game.enemiesDefeated++;
         renderMaze();
-        showNotification('Enemy defeated!');
+
+        // Check if all enemies are defeated - exit is now visible
+        if (game.enemies.length === 0) {
+            showNotification('All enemies defeated! The exit has appeared! 🚪');
+        } else {
+            showNotification('Enemy defeated!');
+        }
     } else {
         defeat();
     }
@@ -654,29 +763,8 @@ function restartGame() {
 }
 
 function resetMazeLayout() {
-    // Restore any smashed walls
-    const originalLayout = [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 2, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
-        [0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0],
-        [0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 4, 0, 1, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0],
-        [0, 1, 1, 4, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0],
-        [0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0],
-        [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 1, 0, 4, 0, 1, 1, 1, 1, 4, 1, 1, 0, 1, 0],
-        [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
-        [0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0],
-        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    ];
-    for (let y = 0; y < MAZE_HEIGHT; y++) {
-        for (let x = 0; x < MAZE_WIDTH; x++) {
-            mazeLayout[y][x] = originalLayout[y][x];
-        }
-    }
+    // Clear maze layout - a new maze will be generated when the game starts
+    mazeLayout = [];
 }
 
 // ============================================
