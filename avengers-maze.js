@@ -184,6 +184,14 @@ function showScreen(screenId) {
     game.currentScreen = screenId;
 }
 
+function showHelp() {
+    document.getElementById('help-overlay').classList.add('active');
+}
+
+function hideHelp() {
+    document.getElementById('help-overlay').classList.remove('active');
+}
+
 // ============================================
 // HERO SELECTION
 // ============================================

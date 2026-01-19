@@ -825,6 +825,136 @@
             margin: 0 3px;
             font-family: monospace;
         }
+
+        /* Help Overlay */
+        .help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .help-overlay.active {
+            display: flex;
+        }
+
+        .help-box {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(20px);
+        }
+
+        .help-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #E53935, #9C27B0, #2196F3, #4CAF50);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .help-section {
+            margin-bottom: 25px;
+        }
+
+        .help-section h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--falcon);
+        }
+
+        .help-section p,
+        .help-section li {
+            color: var(--text-dim);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .help-section ul {
+            list-style: none;
+            padding-left: 10px;
+        }
+
+        .help-section li::before {
+            content: '• ';
+            color: var(--hulk);
+        }
+
+        .help-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .help-table th,
+        .help-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .help-table th {
+            color: var(--hawkeye);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .help-table td {
+            color: var(--text-dim);
+        }
+
+        .help-close-btn {
+            display: block;
+            margin: 30px auto 0;
+            padding: 15px 40px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            border: 2px solid var(--hulk);
+            background: transparent;
+            color: var(--text);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .help-close-btn:hover {
+            background: var(--hulk);
+        }
+
+        .title-buttons {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border-color: var(--hawkeye);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(156, 39, 176, 0.2);
+            border-color: var(--hawkeye);
+        }
     </style>
 </head>
 
@@ -836,7 +966,103 @@
     <div id="title-screen" class="screen active">
         <h1 class="game-title">AVENGERS MAZE</h1>
         <p class="subtitle">Choose Your Hero • Defeat the Villains</p>
-        <button class="btn" onclick="showScreen('hero-select')">START GAME</button>
+        <div class="title-buttons">
+            <button class="btn" onclick="showScreen('hero-select')">START GAME</button>
+            <button class="btn btn-secondary" onclick="showHelp()">HOW TO PLAY</button>
+        </div>
+    </div>
+
+    <!-- Help Overlay -->
+    <div id="help-overlay" class="help-overlay">
+        <div class="help-box">
+            <h2 class="help-title">HOW TO PLAY</h2>
+
+            <div class="help-section">
+                <h3>🎮 Controls</h3>
+                <ul>
+                    <li><span class="key">↑</span><span class="key">↓</span><span class="key">←</span><span
+                            class="key">→</span> or <span class="key">W</span><span class="key">A</span><span
+                            class="key">S</span><span class="key">D</span> — Move</li>
+                    <li><span class="key">1</span> — Use Ability 1</li>
+                    <li><span class="key">2</span> — Use Ability 2</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🎯 Objective</h3>
+                <p>Navigate through the fog-covered maze, defeat all villains, and find the exit to win!</p>
+                <p><strong>⚠️ Important:</strong> The exit only appears after all villains are defeated!</p>
+            </div>
+
+            <div class="help-section">
+                <h3>👾 Enemies</h3>
+                <table class="help-table">
+                    <tr>
+                        <th>Enemy</th>
+                        <th>Health</th>
+                        <th>Attack</th>
+                    </tr>
+                    <tr>
+                        <td>👽 Chitauri Soldier</td>
+                        <td>30</td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td>🐍 Hydra Agent</td>
+                        <td>50</td>
+                        <td>15</td>
+                    </tr>
+                    <tr>
+                        <td>🤖 Ultron Drone</td>
+                        <td>40</td>
+                        <td>20</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="help-section">
+                <h3>⚔️ Combat</h3>
+                <p>Combat is <strong>simultaneous</strong> — both you and the enemy attack each round. Even if you
+                    defeat an enemy, they get one last strike!</p>
+                <ul>
+                    <li><strong>Attack</strong> — Deal normal damage</li>
+                    <li><strong>Special Attack</strong> — Deal 1.5x damage</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🦸 Heroes</h3>
+                <table class="help-table">
+                    <tr>
+                        <th>Hero</th>
+                        <th>Ability 1</th>
+                        <th>Ability 2</th>
+                    </tr>
+                    <tr>
+                        <td>💚 Hulk</td>
+                        <td>💥 Smash walls</td>
+                        <td>🌍 Stun enemies</td>
+                    </tr>
+                    <tr>
+                        <td>🦅 Falcon</td>
+                        <td>🔭 Reveal area</td>
+                        <td>🕊️ Glide over wall</td>
+                    </tr>
+                    <tr>
+                        <td>🏹 Hawkeye</td>
+                        <td>🎯 Ranged attack</td>
+                        <td>👁️ Reveal enemies</td>
+                    </tr>
+                    <tr>
+                        <td>🔵 Stretch</td>
+                        <td>🌀 Pass through wall</td>
+                        <td>🤚 Attack from distance</td>
+                    </tr>
+                </table>
+            </div>
+
+            <button class="help-close-btn" onclick="hideHelp()">GOT IT!</button>
+        </div>
     </div>
 
     <!-- Hero Selection -->
